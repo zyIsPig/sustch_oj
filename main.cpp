@@ -1,18 +1,9 @@
 #include <iostream>
-#include "algorithm"
 #include "queue"
 using namespace std;
-
-struct node{
-    int cnt;
-    node *set;
-    int val;
-    int rank;
-};
-
 struct edge{
-    node *node1;
-    node *node2;
+    int node1;
+    int node2;
     int weight;
 
     friend bool operator >(const struct edge &edge1, const struct edge &edge2);
@@ -21,38 +12,39 @@ inline bool operator > (const struct edge &edge1, const struct edge &edge2){
     return edge1.weight > edge2.weight;
 }
 
-
-node table[1000][1000];
-
-edge edge_queue[2000000];
+//node table[2000];
+int rank_arr[2001];
+int father[2001];
+int cnt_arr[2001];
+edge edge_queue[2000008];
 
 priority_queue<edge,vector<edge>,greater<edge>> pq;
-node * find( node *temp){
-    node *cur=temp;
-    while(cur->set!=cur){
-        cur=cur->set;
+int find( int temp){
+    int cur=temp;
+    while(father[cur]!=cur){
+        cur=father[cur];
     }
-    temp->set=cur;
+    father[temp]=cur;
     return cur;
 }
 
-int merge(node *node1,node *node2){
+int merge(int node1,int node2){
     int cnt=0;
-    node *father_node1=find(node1);
-    node *father_node2=find(node2);
+    int father_node1=find(node1);
+    int father_node2=find(node2);
 
-    if(father_node1->rank>father_node2->rank){
-        father_node2->set=father_node1;
-        father_node1->cnt+=father_node2->cnt;
-        cnt=father_node1->cnt;
+    if(rank_arr[father_node1]>rank_arr[father_node2]){
+        father[father_node2]=father_node1;
+        cnt_arr[father_node1]+=cnt_arr[father_node2];
+        cnt=cnt_arr[father_node1];
     }
     else{
-        father_node1->set=father_node2;
-        father_node2->cnt+=father_node1->cnt;
-        cnt=father_node2->cnt;
+        father[father_node1]=father_node2;
+        cnt_arr[father_node2]+=cnt_arr[father_node1];
+        cnt=cnt_arr[father_node2];
     }
-    if(father_node1->rank==father_node2->rank && father_node1!=father_node2){
-        father_node2->rank++;
+    if(rank_arr[father_node1]==rank_arr[father_node2] && father_node1!=father_node2){
+        rank_arr[father_node2]++;
     }
     return cnt;
 }
@@ -63,8 +55,8 @@ long long kruskal(int size,int num){
     while(!pq.empty()) {
         edge edge_curr = pq.top();
         pq.pop();
-        node *node1 = edge_curr.node1;
-        node *node2 = edge_curr.node2;
+        int node1 = edge_curr.node1;
+        int node2 = edge_curr.node2;
         if (find(node1) != find(node2)) {//不在一个集合
             cnt += edge_curr.weight;
             int node_cnt = merge(node1, node2);
@@ -76,43 +68,27 @@ long long kruskal(int size,int num){
 
 }
 
-
 int main() {
     ios::sync_with_stdio(false);
     cout.tie(NULL);
     int m,n,temp;
     int size=0;
     cin >> m;
-    cin >> n;
 
-    for (int i = 0; i < m; ++i) {
-        for (int j = 0; j < n; ++j) {
+    for (int i = 1; i <=m; ++i) {
+        rank_arr[i]=1;
+        father[i]=i;
+        cnt_arr[i]=1;
+        for (int j = i; j <= m; ++j) {
             cin >> temp;
-            node &cur_node=table[i][j];
-            cur_node.set=&cur_node;
-            cur_node.cnt=1;
-            cur_node.val=temp;
-            cur_node.rank=1;
-            if(i>0){//current node and the node in its head
-                edge &cur_edge=edge_queue[size++];
-                cur_edge.node1=&table[i-1][j];
-                cur_edge.node2=&table[i][j];
-                cur_edge.weight=table[i-1][j].val^table[i][j].val;
-                pq.push(cur_edge);
-            }
-
-            if(j>0){//current node and the node in its left
-                edge &cur_edge=edge_queue[size++];
-                cur_edge.node1=&table[i][j-1];
-                cur_edge.node2=&table[i][j];
-                cur_edge.weight=table[i][j-1].val^table[i][j].val;
-                pq.push(cur_edge);
-            }
-
+            edge &edge_cur=edge_queue[size++];
+            edge_cur.weight=temp;
+            edge_cur.node1=i-1;
+            edge_cur.node2=j;
+            pq.push(edge_cur);
         }
     }
-    long long ans=kruskal(size,m*n);
+    long long ans=kruskal(size,m);
     cout << ans <<endl;
-
     return 0;
 }
